@@ -6,6 +6,8 @@ clc
 %5-3 2nd order Adams Bashford Adams Moulton, 5-2 2nd order Adams Bashfrod BDF 
 cp=5; %Predictor Choice
 cc=3; %Corrector Choice
+%1 uniform quantization, 2 Nonuniform quantization
+cq=1; %Quantization method
 
 t=0;
 h=0.05;
@@ -20,19 +22,8 @@ y=0;
 xx=[x;y];
 T=0.1; %Time of sampling by the controller
 n=1;
-G=0.07; %gainb of the controller
+G=0.07; %gain of the controller
 u=1; %input
-
-%example2 PI controller
-% tsim=65;
-% y=0;
-% x1=0;
-% x2=0;
-% xx=[y;x1;x2];
-% T=0.1;
-% n=1;
-% G=0.09;
-% u=1;
 
 s=size(xx);
 s=s(1);
@@ -41,7 +32,7 @@ xpre2=xx;
 times(1)=t;
 xhist(1:s,1)=xx;
 
-timessg=0;
+
 eeghist=0;
 feeghist=0;
 iterationsc=0;
@@ -92,10 +83,10 @@ while t<tsim
     
 
     [alpha0,alpha1,alpha2,betha1,betha2]=coefs(cp,h,holdd);   
-    [xx0g,ee0g,eg,tg,sg]=predictorg(xx,xpre1,t,tpre1,tpre2,holdd,T,eg,egpre,tg,cp,G,u); %predictor of intermediate points
+    [xx0g,ee0g,eg,tg,sg]=predictorg(xx,xpre1,t,tpre1,tpre2,holdd,T,eg,egpre,tg,cp,G,u,cq); %predictor of intermediate points
     xx0=predictor(xx,xpre1,eg,egpre,t,tpre1,tpre2,h,betha1,betha2); %predictor
     [alpha0,alpha1,alpha2,betha1,betha2]=coefs(cc,h,holdd);
-    [iterations,xx,eg,tg,feeg,eeg]=NewtonNL(h,holdd,xx0,xpre1,xpre2,alpha1,alpha2,alpha0,betha1,betha2,tpre1,t,sg,eg,T,tg,G,u,ee0g,egpre);
+    [iterations,xx,eg,tg,feeg,eeg]=NewtonNL(h,holdd,xx0,xpre1,xpre2,alpha1,alpha2,alpha0,betha1,betha2,tpre1,t,sg,eg,T,tg,G,u,ee0g,egpre,cq);
     [dn,r]=lote(cp,cc,xx0,xx,h,holdd); %error estimate
     iterationsc=iterations+iterationsc;
     
@@ -189,11 +180,11 @@ hold on
 % figure(15)
 % plot(timessg,eeghist)
 % hold on
-figure(16)
-plot(times,hhist(4,:))
+% figure(16)
+% plot(times,hhist(4,:))
 hold on
 
-function [iterations,xx,eg,tg,feeg,eeg]=NewtonNL(h,holdd,xx,xpre1,xpre2,alpha1,alpha2,alpha0,betha1,betha2,tpre1,t,sg,eg,T,tg,G,u,eeg,egpre)
+function [iterations,xx,eg,tg,feeg,eeg]=NewtonNL(h,holdd,xx,xpre1,xpre2,alpha1,alpha2,alpha0,betha1,betha2,tpre1,t,sg,eg,T,tg,G,u,eeg,egpre,cq)
 NTOL=1e-4; 
 iterations=0;
 a=1;
@@ -209,7 +200,7 @@ a=1;
         end
         [J]=Jacob(h,xx,xpre1,xpre2,alpha1,alpha2,alpha0,betha1,betha2,tpre1,eg,egpre,t); %Jacobian
         JJ=Jadd(J,sg); %Extending Jacobian for intermediate points
-        [feeg,tg]=funcg(xx,xpre1,xpre2,eg,t,tpre1,T,eeg,egpre,tg,G,u,h,holdd); %corrector of intermediate points
+        [feeg,tg]=funcg(xx,xpre1,xpre2,eg,t,tpre1,T,eeg,egpre,tg,G,u,h,holdd,cq); %corrector of intermediate points
         fy=func(h,xx,xpre1,xpre2,alpha1,alpha2,alpha0,betha1,betha2,tpre1,eg,egpre,t); %corrector
         if sg==0
             f=fy;
@@ -220,7 +211,7 @@ a=1;
         xx=xxx(1:s,1);
         if sg~=0
             eeg=xxx(s+1:end,1);
-            eeg=quz(eeg);
+            eeg=quz(eeg,cq);
         end
         if sg==0
             eg=eg;
@@ -273,7 +264,7 @@ end
 
 %This is the equations of the controller for the intermediate points to be
 %added to the newton solver
-function [eeeg,tg]=funcg(xx,xpre1,xpre2,eg,t,tpre1,T,eeg,egpre,tg,G,u,h,holdd)
+function [eeeg,tg]=funcg(xx,xpre1,xpre2,eg,t,tpre1,T,eeg,egpre,tg,G,u,h,holdd,cq)
 tgpre=tg;
 if tg>tpre1 && tg<=t+0.000001
     m=0;
@@ -283,7 +274,7 @@ if tg>tpre1 && tg<=t+0.000001
 %         xg=hg*(evaleval(xx,t,eg))+(xpre1); %First order AM implicit interpolator
         xg=(hg*(evaleval(xx,t,eg))+((1+hg/holdd)*xpre1)+((-(hg^2)/((hg+holdd)*holdd))*xpre2))/((2*hg+holdd)/(hg+holdd)); %Second order BDF implicit interpolator
 %         xg=xpre1+hg*evaleval(xpre1,tpre1,egpre)+((hg^2/h)*(xx-xpre1-(h*evaleval(xpre1,tpre1,egpre)))); %Second order AM implicit interpolator
-        xg=quz(xg);
+        xg=quz(xg,cq);
         if m==1
             aw=egpre+G*T*(u-xg(2,1));
 %             aw=min(aw,0.9); %upper limnit anti wind up
@@ -309,7 +300,7 @@ end
 tg=tgpre; %reset the counter of the intermediate points to be counted again in the next iterations
 end
 
-function [xx0g,ee0g,eg,tg,sg]=predictorg(xx,xpre1,t,tpre1,tpre2,holdd,T,eg,egpre,tg,cp,G,u)
+function [xx0g,ee0g,eg,tg,sg]=predictorg(xx,xpre1,t,tpre1,tpre2,holdd,T,eg,egpre,tg,cp,G,u,cq)
 tgpre=tg;
 if (tg > tpre1) && (tg <= t+0.000001)
     m=0;
@@ -326,9 +317,9 @@ if (tg > tpre1) && (tg <= t+0.000001)
         ee0g(m,:)=eg;
         tg=tg+T;
     end
-    xx0g1=quz(xx0g(:,2));
+    xx0g1=quz(xx0g(:,2),cq);
     xx0g(:,2)=xx0g1;
-    ee0g=quz(ee0g);
+    ee0g=quz(ee0g,cq);
     xx0g=xx0g(:,2);
     sg=size(xx0g);
     sg=sg(1,1);
@@ -443,15 +434,34 @@ f=A*xx+B*eg;
 end
 
 %This function does the quantification
-function [x]=quz(x)
-range=1;
-q=16;
-x=round(x*(2^q))*range/(2^q);
-
+function [x]=quz(x,cq)
+if cq==1 %Uniform Quantization
+    range=1;
+    q=16;
+    x=round(x*(2^q))*range/(2^q);
+elseif cq==2 %NonUniform Quantization
+        xp=x;
+    if xp>0.8
+        x=2*x;
+    else
+        x=(2/3)*x+(4/3);
+    end
+    %Uniform Quantization    
+    range=1;
+    q=12;
+    x=round(x*(2^q))*range/(2^q);
+    if xp>0.8
+%         x=((3/2)*x)-2;
+        x=x/2;
+    else
+%         x=x/2;
+        x=((3/2)*x)-2;
+    end
 end
-
+end
+%System eigenvalues
 function [A,B]=basedmatrix
-a=-0.11;
+a=-0.01;
 b=0.9;
 A=[2*a sqrt(a^2+b^2);-sqrt(a^2+b^2) 0];
 B=[-sqrt(a^2+b^2) 0]';

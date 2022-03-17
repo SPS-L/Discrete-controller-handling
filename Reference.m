@@ -356,7 +356,7 @@ if cq==1 %Uniform Quantization
     range=1;
     q=16;
     x=round(x*(2^q))*range/(2^q);
-elseif cq==4 %NonUniform Quantization A Law
+elseif cq==2 %NonUniform Quantization
     xp=x;
     if xp>0.8
         x=2*x;
@@ -365,9 +365,8 @@ elseif cq==4 %NonUniform Quantization A Law
     end
     %Uniform Quantization    
     range=1;
-    q=12;
+    q=16;
     x=round(x*(2^q))*range/(2^q);
-    %Expanding the signal
     if xp>0.8
 %         x=((3/2)*x)-2;
         x=x/2;
@@ -377,9 +376,9 @@ elseif cq==4 %NonUniform Quantization A Law
     end
 end
 end
-
+%System eigenvalues
 function [A,B]=basedmatrix
-a=-0.11;
+a=-0.01;
 b=0.9;
 A=[2*a sqrt(a^2+b^2);-sqrt(a^2+b^2) 0];
 B=[-sqrt(a^2+b^2) 0]';
