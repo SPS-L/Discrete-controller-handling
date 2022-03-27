@@ -1,51 +1,52 @@
-%% %% IBM method for RTE example
-%%%%% anti wind up added
+%% %% This file solves the RTE example (single PI controller) using the interpolation based method (IBM)
+%%%% Please set the parameters based on the guidance provided in the Readme.md file 
 
 clear all
 clc
-%5-3 2nd order Adams Bashford Adams Moulton, 5-2 2nd order Adams Bashfrod BDF 
+% This parameter chooses the predictor method. It can take values 4 and 5. 4 is for the first-order Adams-Bashford, and 5 is for the second-order Adams-Bashford. 
 cp=5; %Predictor Choice
+% This parameter chooses the corrector method. It can take values 2 and 3. 2 is for the second-order BDF, and 3 is for the second-order Adams-Moulton. 
 cc=3; %Corrector Choice
+%This parameters chooses the quantization method
 %1 uniform quantization, 2 Nonuniform quantization
 cq=1; %Quantization method
 
-t=0;
-h=0.05;
+t=0; %Starting point of the integration
+h=0.05; %The first time-step size
 holdd=h;
-hmin=0.05;
-hmax=1;
+hmin=0.05; %The minimum acceptable time-step size
+hmax=1; %The maximum acceptable time-step size
 
-% example #1
 tsim=65; %Time of simulation
+%Initial state variables values
 x=0;
 y=0;
 xx=[x;y];
 T=0.1; %Time of sampling by the controller
-n=1;
-G=0.07; %gain of the controller
-u=1; %input
+G=0.07; %Gain of the controller
+u=1; %Input
 
 s=size(xx);
 s=s(1);
 xpre1=xx;
 xpre2=xx;
 times(1)=t;
-xhist(1:s,1)=xx;
+xhist(1:s,1)=xx; %Allocating a space to save the results
 
 
 eeghist=0;
 feeghist=0;
-iterationsc=0;
-tsc=0;
-mtsc=0;
+iterationsc=0; %Allocating a space to save the number of Newoton iterations
+tsc=0; %Number of time steps
+mtsc=0; %number of accepted time steps with the manimim value
 egpre=0;
 eg=0;
-tg=T;
+tg=T; %Time of the events
 k=1;
-ETOL=3e-4;
+ETOL=3e-4; %The tolerance to compare with the error estimate
 
 while t<tsim
-    %old times
+    %Setting old times
     if k>2
         tpre3=tpre2;
     else
@@ -61,18 +62,15 @@ while t<tsim
     tpre1=t;
     t=t+h;
     
-    %old solutions
+    %Setting old solutions
     if k>1
         xpre2=xhist(1:s,k-1);
     else
         xpre2=xpre1;
     end
     xpre1=xhist(1:s,k);
-    
-    
-    
-    
-    %Last digital signal
+       
+    %Setting old controllers's signal
     if k>1
         egpre=eg;
     else
@@ -82,15 +80,15 @@ while t<tsim
     times(k)=t;
     
 
-    [alpha0,alpha1,alpha2,betha1,betha2]=coefs(cp,h,holdd);   
-    [xx0g,ee0g,eg,tg,sg]=predictorg(xx,xpre1,t,tpre1,tpre2,holdd,T,eg,egpre,tg,cp,G,u,cq); %predictor of intermediate points
+    [alpha0,alpha1,alpha2,betha1,betha2]=coefs(cp,h,holdd); %calculating the coefficients of the predictor   
+    [xx0g,ee0g,eg,tg,sg]=predictorg(xx,xpre1,t,tpre1,tpre2,holdd,T,eg,egpre,tg,cp,G,u,cq); %predictor of the intermediate points (explicit predictor)
     xx0=predictor(xx,xpre1,eg,egpre,t,tpre1,tpre2,h,betha1,betha2); %predictor
-    [alpha0,alpha1,alpha2,betha1,betha2]=coefs(cc,h,holdd);
-    [iterations,xx,eg,tg,feeg,eeg]=NewtonNL(h,holdd,xx0,xpre1,xpre2,alpha1,alpha2,alpha0,betha1,betha2,tpre1,t,sg,eg,T,tg,G,u,ee0g,egpre,cq);
-    [dn,r]=lote(cp,cc,xx0,xx,h,holdd); %error estimate
-    iterationsc=iterations+iterationsc;
+    [alpha0,alpha1,alpha2,betha1,betha2]=coefs(cc,h,holdd); %calculating the coefficients of the corrector
+    [iterations,xx,eg,tg,feeg,eeg]=NewtonNL(h,holdd,xx0,xpre1,xpre2,alpha1,alpha2,alpha0,betha1,betha2,tpre1,t,sg,eg,T,tg,G,u,ee0g,egpre,cq); %The main function (Newton solver)
+    [dn,r]=lote(cp,cc,xx0,xx,h,holdd); %Error estimate
+    iterationsc=iterations+iterationsc; %Counting the number of Newton iterations
     
-
+    %Calculating the new time step and saving the results for the current time step
     hpre=h;
     if dn>ETOL
         hc=[hmin,0.5*h;];
@@ -148,12 +146,12 @@ while t<tsim
     end
 end
 
-sgsize=size(eeghist);
-sgsize=sgsize(1,2);
-timessg=0.1:0.1:sgsize*0.1;
+% sgsize=size(eeghist);
+% sgsize=sgsize(1,2);
+% timessg=0.1:0.1:sgsize*0.1;
 
 
-
+%Plotting the results
 figure(1)
 plot(times,xhist(2,:),'+')
 hold on
@@ -185,10 +183,10 @@ hold on
 hold on
 
 function [iterations,xx,eg,tg,feeg,eeg]=NewtonNL(h,holdd,xx,xpre1,xpre2,alpha1,alpha2,alpha0,betha1,betha2,tpre1,t,sg,eg,T,tg,G,u,eeg,egpre,cq)
-NTOL=1e-4; 
+NTOL=1e-4; %Tolerance for the Newton solver
 iterations=0;
 a=1;
-    while (iterations<5) && (a>NTOL)
+    while (iterations<30) && (a>NTOL)
         xxpre=xx;
         iterations=iterations+1;
         s=size(xx);
@@ -198,16 +196,17 @@ a=1;
         else
             xxx=[xx;eeg]; %extending the state variables for controller intermediate signals
         end
-        [J]=Jacob(h,xx,xpre1,xpre2,alpha1,alpha2,alpha0,betha1,betha2,tpre1,eg,egpre,t); %Jacobian
+        [J]=Jacob(h,xx,xpre1,xpre2,alpha1,alpha2,alpha0,betha1,betha2,tpre1,eg,egpre,t); %calculating the Jacobian
         JJ=Jadd(J,sg); %Extending Jacobian for intermediate points
-        [feeg,tg]=funcg(xx,xpre1,xpre2,eg,t,tpre1,T,eeg,egpre,tg,G,u,h,holdd,cq); %corrector of intermediate points
-        fy=func(h,xx,xpre1,xpre2,alpha1,alpha2,alpha0,betha1,betha2,tpre1,eg,egpre,t); %corrector
+        [feeg,tg]=funcg(xx,xpre1,xpre2,eg,t,tpre1,T,eeg,egpre,tg,G,u,h,holdd,cq); %Corrector of intermediate points (Implicit corrector)
+        fy=func(h,xx,xpre1,xpre2,alpha1,alpha2,alpha0,betha1,betha2,tpre1,eg,egpre,t); %Corrector
         if sg==0
             f=fy;
         else
             f=[fy;feeg']; %extending mismatch for intermediate points
         end
-        xxx=xxx-JJ\f;
+        xxx=xxx-JJ\f; %Newton
+        %Updating the state variables
         xx=xxx(1:s,1);
         if sg~=0
             eeg=xxx(s+1:end,1);
@@ -224,7 +223,7 @@ a=1;
             disp('Did not converged')
         end
     end
-    tg=tg+sg*T;
+    tg=tg+sg*T; %Updating the  events time
 end
 
 % This function computes the Jacobian
@@ -257,32 +256,34 @@ function [xxp]=predictor(xx,xpre1,eg,egpre,t,tpre1,tpre2,h,betha1,betha2)
 end
 
 
-%This function is the chosen method's equation
+%This function determines the corrector formulation
 function [f]=func(h,xx,xpre1,xpre2,alpha1,alpha2,alpha0,betha1,betha2,tpre1,eg,egpre,t) 
 f=h*(betha1*evaleval(xx,t,eg)+betha2*evaleval(xpre1,tpre1,egpre))+(alpha0*xx)+(alpha1*xpre1)+(alpha2*xpre2);
 end
 
-%This is the equations of the controller for the intermediate points to be
-%added to the newton solver
+%Implicit interpolator
 function [eeeg,tg]=funcg(xx,xpre1,xpre2,eg,t,tpre1,T,eeg,egpre,tg,G,u,h,holdd,cq)
 tgpre=tg;
 if tg>tpre1 && tg<=t+0.000001
     m=0;
     while (tg<=t+0.000001)       
         m=m+1;
-        hg=tg-tpre1;
+        hg=tg-tpre1; %Calculating the time step for the intermediate points
+        
+%%%chossing the interpolator (only the chosen one should be decomented)
 %         xg=hg*(evaleval(xx,t,eg))+(xpre1); %First order AM implicit interpolator
         xg=(hg*(evaleval(xx,t,eg))+((1+hg/holdd)*xpre1)+((-(hg^2)/((hg+holdd)*holdd))*xpre2))/((2*hg+holdd)/(hg+holdd)); %Second order BDF implicit interpolator
 %         xg=xpre1+hg*evaleval(xpre1,tpre1,egpre)+((hg^2/h)*(xx-xpre1-(h*evaleval(xpre1,tpre1,egpre)))); %Second order AM implicit interpolator
+
         xg=quz(xg,cq);
         if m==1
-            aw=egpre+G*T*(u-xg(2,1));
-%             aw=min(aw,0.9); %upper limnit anti wind up
+            aw=egpre+G*T*(u-xg(2,1)); %Controller's equation
+%             aw=min(aw,0.9); %upper limit anti wind up
 %             aw=max(aw,-0.9); %Downer limit anti wind up
             f2=eeg(m,1)-aw;
             eeeg(1,1)=f2;
         else
-            aw=+eeg(m-1,1)+G*T*(u-xg(2,1));
+            aw=+eeg(m-1,1)+G*T*(u-xg(2,1)); %Controller's equation
 %             aw=min(aw,0.9); %upper limnit anti wind up
 %             aw=max(aw,-0.9); %Downer limit anti wind up
             f2=eeg(m,1)-aw;            
@@ -300,6 +301,7 @@ end
 tg=tgpre; %reset the counter of the intermediate points to be counted again in the next iterations
 end
 
+%Explicit interpolator
 function [xx0g,ee0g,eg,tg,sg]=predictorg(xx,xpre1,t,tpre1,tpre2,holdd,T,eg,egpre,tg,cp,G,u,cq)
 tgpre=tg;
 if (tg > tpre1) && (tg <= t+0.000001)
@@ -308,6 +310,8 @@ if (tg > tpre1) && (tg <= t+0.000001)
         m=m+1;
         hg=tg-tpre1;
         [alpha0,alpha1,alpha2,betha1,betha2]=coefs(cp,hg,holdd);
+
+%%%chossing the interpolator (only the chosen one should be decomented)
 %         xg=xpre1+hg*((evaleval(xpre1,tpre1,egpre))); %first order Adams Bashford explicit interpolator
         xg=xx+hg*(((betha1)*evaleval(xx,tpre1,eg))+((betha2)*evaleval(xpre1,tpre2,egpre))); %second order Adams Bashford explicit interpolator
         xx0g(m,:)=xg;
@@ -333,8 +337,7 @@ end
 tg=tgpre; %reset the counter of the intermediate points to be counted again in the next iterations
 end
 
-%This function computes the coefficients based on the step sizes and the
-%method chosen
+%This function computes the coefficients based on the step sizes
 function [alpha0,alpha1,alpha2,betha1,betha2]=coefs(c,h,holdd)
 if c==1
     % corrector coefficients
@@ -365,6 +368,7 @@ elseif c==3
 
 elseif c==4
     %predictor coefficients
+    %AB-1
     alpha1=0;
     alpha2=0;
     alpha0=0;
@@ -373,6 +377,7 @@ elseif c==4
     
 elseif c==5
     %predictor coefficients
+    %AB-1
     alpha1=0;
     alpha2=0;
     alpha0=0;
@@ -383,7 +388,7 @@ end
 
 
 
-%This function compute the local truncation error for predictor corrector methods (Milne's estimate)
+%This function computes the error estimate for predictor corrector methods (Milne's estimate)
 function [dn,r]=lote(cp,cc,yp,yy,h,holdd)
 global ETOL
 ETOL=3e-6;
@@ -417,6 +422,7 @@ elseif cc==3 && cp==5
 end
 end
 
+%This function defines the system's formulation
 function [f]=evaleval(xx,t,eg)
 %example1 RTE PI Controller Close-loop
 [A,B]=basedmatrix;
@@ -435,31 +441,30 @@ end
 
 %This function does the quantification
 function [x]=quz(x,cq)
-if cq==1 %Uniform Quantization
+%Uniform Quantization
+if cq==1 
     range=1;
     q=16;
     x=round(x*(2^q))*range/(2^q);
-elseif cq==2 %NonUniform Quantization
+%NonUniform Quantization
+elseif cq==2 
         xp=x;
     if xp>0.8
         x=2*x;
     else
         x=(2/3)*x+(4/3);
     end
-    %Uniform Quantization    
     range=1;
     q=12;
     x=round(x*(2^q))*range/(2^q);
     if xp>0.8
-%         x=((3/2)*x)-2;
         x=x/2;
     else
-%         x=x/2;
         x=((3/2)*x)-2;
     end
 end
 end
-%System eigenvalues
+%System's eigenvalues
 function [A,B]=basedmatrix
 a=-0.01;
 b=0.9;

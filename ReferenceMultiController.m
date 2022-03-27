@@ -1,52 +1,53 @@
-%% %% This is for RTE example variable step landing on the events using zero crossing (True Solution) for multiple controllers
-%%%%% anti wind up added
-%%%%% Multi controller
+%% %% This file solves the RTE example (multiple PI controller) using the traditional method (reference)
+%%%% Please set the parameters based on the guidance provided in the Readme.md file
 
 clear all
 clc
+% This parameter chooses the predictor method. It can take values 4 and 5. 4 is for the first-order Adams-Bashford, and 5 is for the second-order Adams-Bashford. 
+cp=5; %Predictor Choice
+% This parameter chooses the corrector method. It can take values 2 and 3. 2 is for the second-order BDF, and 3 is for the second-order Adams-Moulton. 
+cc=3; %Corrector Choice
+%This parameters chooses the quantization method
+%1 uniform quantization, 2 Nonuniform quantization
+cq=1; %Quantization method
 
-cp=5;
-cc=3;
-cq=1;
-
-t=0;
-h=0.05;
+t=0; %Starting point of the integration
+h=0.05; %The first time-step size
 holdd=h;
-hmin=0.001;
-hmax=1;
+hmin=0.001; %The minimum acceptable time-step size
+hmax=1; %The maximum acceptable time-step size
 
-% example #5
-tsim=65;
+tsim=65; %Time of the simulation
+%Initial state variables values
 x=0;
 y=0;
 xx=[x;y];
-cn=3;
-T=[0.1 0.12 0.15];
-n=1;
-G=[0.05 0.06 0.07];
-u=1;
+cn=3; %Number of controllers
+T=[0.1 0.12 0.15]; %Time of sampling by the controllers
+G=[0.05 0.06 0.07]; %Gain of the controllers
+u=1; %Input
 
 s=size(xx);
 s=s(1);
 xpre1=xx;
 xpre2=xx;
 times(1)=t;
-xhist(1:s,1)=xx;
+xhist(1:s,1)=xx; %Allocating a space to save the results
 
 x2=0;
-iterationsc=0;
-tsc=0;
-mtsc=0;
+iterationsc=0; %Allocating a space to save the number of Newoton iterations
+tsc=0; %Number of time steps
+mtsc=0; %Number of accepted time steps with the manimim value
+%Allocating the space to save the old controllers' signal
 etpre2j=zeros(1,cn);
 etprej=zeros(1,cn);
 etj=zeros(1,cn);
-tg=T;
+tg=T; %Time of the events
 k=1;
-ETOL=3e-4;
-ek=0;
+ETOL=3e-4; %The tolerance to compare with the error estimate
 
 while t<tsim
-        %old times
+    %Setting old times
     if k>2
         tpre3=tpre2;
     else
@@ -61,6 +62,7 @@ while t<tsim
     tpre1=t;
     t=t+h;
     
+    %Setting old solutions
     if k>2
         xpre3=xhist(1:s,k-2);
     else
@@ -76,13 +78,13 @@ while t<tsim
     k=k+1;
 
     
-    %Discrete part
+    %Setting new and old controllers's signal
     if t<min(T)
         etj=zeros(1,cn);
         etprej=zeros(1,cn);
         etpre2j=zeros(1,cn);
     else
-        [t,conti,tg,mm]=detert(tpre1,t,tg,T,cn,tsim);
+        [t,conti,tg,mm]=detert(tpre1,t,tg,T,cn,tsim); %Finding the event if there is any
         if mm==0
             etpre2j=etprej;
             etprej=etj;
@@ -91,28 +93,28 @@ while t<tsim
         else
             etpre2j=etprej;
             etprej=etj;
-            etj=contex(conti,etj,G,T,u,x2,cn);
+            etj=contex(conti,etj,G,T,u,x2,cn); %Calculating the controllers' signal in case of any event
             etj=quz(etj,cq);
-            h=t-tpre1;
+            h=t-tpre1; %Zero-crossing
             flagg=1;
         end
     end
+    %Summation of the controllers' signal
     et=sum(etj);
     etpre=sum(etprej);
     etpre2=sum(etpre2j);
     times(k)=t;
 
-    [alpha0,alpha1,alpha2,betha1,betha2]=coefs(cp,h,holdd);
-    xx0=predictor(xx,xpre1,et,etpre,t,tpre1,h,betha1,betha2);
-    [alpha0,alpha1,alpha2,betha1,betha2]=coefs(cc,h,holdd);
-    [iterations,xx]=NewtonNL(h,xx0,xpre1,xpre2,alpha1,alpha2,alpha0,betha1,betha2,tpre1,et,etpre,t);
-    [dn,r]=lote(cp,cc,xx0,xx,h,holdd);
-    iterationsc=iterations+iterationsc;
+    [alpha0,alpha1,alpha2,betha1,betha2]=coefs(cp,h,holdd); %calculating the coefficients of the predictor
+    xx0=predictor(xx,xpre1,et,etpre,t,tpre1,h,betha1,betha2); %predictor
+    [alpha0,alpha1,alpha2,betha1,betha2]=coefs(cc,h,holdd); %calculating the coefficients of the corrector
+    [iterations,xx]=NewtonNL(h,xx0,xpre1,xpre2,alpha1,alpha2,alpha0,betha1,betha2,tpre1,et,etpre,t); %The main function (Newton solver)
+    [dn,r]=lote(cp,cc,xx0,xx,h,holdd); %Error estimate
+    iterationsc=iterations+iterationsc; %Counting the number of Newton iterations
 
-            
+   %Calculating the new time step and saving the results for the current time step                 
    hpre=h;
     if dn>ETOL
-%       h=h/2;
         hc=[hmin,0.5*h;];
         h=max(hc);
         if h==hmin
@@ -155,13 +157,9 @@ while t<tsim
 
         end
     else
-%         if r*h>hmin
-%             hc=hmin;
-%         end
         hc=[1.25*h,hmax];
         h=min(hc);
         tsc=tsc+1;
-%       h=r*h;
         xhist(1:s,k)=xx;
         x2=xx(2,1);
         if k==2
@@ -180,6 +178,7 @@ while t<tsim
 
 end
 
+%Plotting the results
 figure(1)
 plot(times,xhist(2,:))
 hold on
@@ -207,6 +206,7 @@ set(gca,'FontSize',18)
 % plot(times,hhist(3,:))
 hold on
 
+%This function finds the discontinuity if there is any and calculates its time  
 function [t,minl,tg,mm]=detert(tpre1,t,tg,T,cn,tsim)
 temp=zeros(1,cn);
 temp=temp+tsim*2;
@@ -236,6 +236,7 @@ else
 end
 end
 
+%This function updates the controllers' signal in case of the event 
 function etj=contex(conti,etj,G,T,u,x2,cn)
 jj=size(conti);
 jj=jj(1,2);
@@ -244,15 +245,15 @@ while j<jj
     j=j+1;
     contj=conti(1,j);
     if contj==1
-        etj(1,contj)=etj(1,contj)+(G(1,1)*T(1,1)*(u-x2));
+        etj(1,contj)=etj(1,contj)+(G(1,1)*T(1,1)*(u-x2)); %Controller's equation
         etj(1,contj)=min(etj(1,contj),0.98); %upper limnit anti wind up
         etj(1,contj)=max(etj(1,contj),-0.98); %lower limnit anti wind up
     elseif contj==2
-        etj(1,contj)=etj(1,contj)+(G(1,2)*T(1,2)*(u-x2));
+        etj(1,contj)=etj(1,contj)+(G(1,2)*T(1,2)*(u-x2)); %Controller's equation
         etj(1,contj)=min(etj(1,contj),0.98); %upper limnit anti wind up
         etj(1,contj)=max(etj(1,contj),-0.98); %lower limnit anti wind up
     elseif contj==3
-        etj(1,contj)=etj(1,contj)+(G(1,3)*T(1,3)*(u-x2));
+        etj(1,contj)=etj(1,contj)+(G(1,3)*T(1,3)*(u-x2)); %Controller's equation
         etj(1,contj)=min(etj(1,contj),0.98); %upper limnit anti wind up
         etj(1,contj)=max(etj(1,contj),-0.98); %lower limnit anti wind up
     end
@@ -261,26 +262,24 @@ end
 
 
 function [iterations,xx]=NewtonNL(h,xx,xpre1,xpre2,alpha1,alpha2,alpha0,betha1,betha2,tpre1,et,etpre,t)
-NTOL=1e-4;
+NTOL=1e-4; %Tolerance for the Newton solver
 iterations=0;
 a=1;
     while (iterations<30) && (a>NTOL)
     xxpre=xx;
     iterations=iterations+1;
-    [J]=Jacob(h,xx,xpre1,xpre2,alpha1,alpha2,alpha0,betha1,betha2,tpre1,et,etpre,t);
-    yy=xx-J\func(h,xx,xpre1,xpre2,alpha1,alpha2,alpha0,betha1,betha2,tpre1,et,etpre,t);
+    [J]=Jacob(h,xx,xpre1,xpre2,alpha1,alpha2,alpha0,betha1,betha2,tpre1,et,etpre,t); %calculating the Jacobian
+    yy=xx-J\func(h,xx,xpre1,xpre2,alpha1,alpha2,alpha0,betha1,betha2,tpre1,et,etpre,t); %Newton
     xx=yy;
-%     xx=quz(xx,1);
     a=abs(xx-xxpre);
     a=max(a);
-%     a=abs(func(h,xx,xpre1,xpre2,alpha1,alpha2,alpha0,betha1,betha2,tpre1,et,t));
-%     a=a(1,1);
     if iterations==30
         disp('Did not converged')
     end
     end
 end
 
+% This function computes the Jacobian
 function [J]=Jacob(h,xx,xpre1,xpre2,alpha1,alpha2,alpha0,betha1,betha2,tpre1,et,etpre,t)
 s=size(xx);
 s=s(1);
@@ -303,7 +302,7 @@ function [xxp]=predictor(xx,xpre1,et,etpre,t,tpre1,h,betha1,betha2)
 end
 
 
-%This function is the chosen method's equation
+%This function determines the corrector formulation
 function [f]=func(h,xx,xpre1,xpre2,alpha1,alpha2,alpha0,betha1,betha2,tpre1,et,etpre,t) 
 f=h*(betha1*evaleval(xx,t,et)+betha2*evaleval(xpre1,tpre1,etpre))+(alpha0*xx)+(alpha1*xpre1)+(alpha2*xpre2);
 end
@@ -339,7 +338,8 @@ elseif c==3
     betha2=1/2; 
 
 elseif c==4
-    %Adams Bashford 1
+    %predictor coefficients
+    %AB-1
     alpha1=0;
     alpha2=0;
     alpha0=0;
@@ -347,7 +347,8 @@ elseif c==4
     betha2=0;
     
 elseif c==5
-    %Adams Bashford 2
+    %predictor coefficients
+    %AB-1
     alpha1=0;
     alpha2=0;
     alpha0=0;
@@ -358,8 +359,7 @@ end
 
 
 
-%This function is supposed to compute the local truncation error for
-%predictor corrector methods (Milne's estimate)
+%This function computes the error estimate for predictor corrector methods (Milne's estimate)
 function [dn,r]=lote(cp,cc,yp,yy,h,holdd)
 global ETOL
 ETOL=3e-6;
@@ -393,6 +393,7 @@ elseif cc==3 && cp==5
 end
 end
 
+%This function defines the system's formulation
 function [f]=evaleval(xx,t,et)
 % example #1
 % sigma=10;
@@ -417,41 +418,31 @@ end
 
 %This function does the quantification
 function [x]=quz(x,cq)
-if cq==1 %Uniform Quantization
+%Uniform Quantization
+if cq==1 
     range=1;
     q=16;
     x=round(x*(2^q))*range/(2^q);
-elseif cq==2 %NonUniform Quantization Mu Law
-    %Compressing the signal
-    mu=255;
-    x=sign(x)*((log(1+mu*abs(x)))/(log(1+mu)));
-    %Uniform Quantization
+%NonUniform Quantization
+elseif cq==2 
+    xp=x;
+    if xp>0.8
+        x=2*x;
+    else
+        x=(2/3)*x+(4/3);
+    end    
     range=1;
-    q=16;
+    q=10;
     x=round(x*(2^q))*range/(2^q);
-    %Expanding the signal
-    x=sign(x)*(((1+mu)^abs(x))-1/mu);
-elseif cq==3 %NonUniform Quantization A Law
-    %Compressing the signal
-    A=87.6;
-    if abs(x)>=0 && abs(x)<=(1/A) 
-        x=(sign(x)/(1+log(A)))*A*abs(x);
-    elseif abs(x)>=(1/A) && abs(x)<=1
-        x=(sign(x)/(1+log(A)))*(1+log(A*abs(x)));
-    end
-    %Uniform Quantization    
-    range=1;
-    q=16;
-    x=round(x*(2^q))*range/(2^q);
-    %Expanding the signal 
-    if abs(x)>=0 && abs(x)<=(1/(1+log(A))) 
-        x=sign(x)*((abs(x)*(1+log(A))/A));
-    elseif abs(x)>=(1/(1+log(A))) && abs(x)<=1
-        x=sign(x)*((exp(abs(x)*((1+log(A)))-1))/(A+(A*log(A))));
+    if xp>0.8
+        x=x/2;
+    else
+        x=((3/2)*x)-2;
     end
 end
 end
 
+%System's eigenvalues
 function [A,B]=basedmatrix
 a=-0.17;
 b=0.9;
