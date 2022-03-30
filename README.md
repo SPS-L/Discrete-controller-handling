@@ -16,6 +16,9 @@ In order to use the second option simply set the parameters: cp=5 & cc=2
 
 Two quantization methods are also available. In order to use the uniform quantization set cq=1, and for the nonuniform quantization set cq=2. Moreover, the number of bits used for the quantization can be set inside the function called *quz*.
 
+### Interpolator settings
+There are different interpolators available to use for the IBM method, two explicit interpolators and three implicit ones. To change the explicit and implicit interpolators inside the file __*IBM*__, you should comment the current and decomment the one you wish to choose inside the functions "*interpolatorg*" and "*funcg*", respectively. Please note that only one of the interpolators must be decomented.
+
 ### Simulation settings
 
 The time of the simulation can be set by the parameter *tsim*. The parameters *h* *hmin*, and *hmax* determine the first time step size, the minimum limit of the time step size, and the maximum limit of the time step size.
@@ -31,3 +34,5 @@ The eigenvalues of the system (*a* and *b*) can be set inside of the function *b
 ## Results
 
 The figures will be made automatically. Besides, the overall number of iterations is saved under the variable called *iterationsc*.
+
+
