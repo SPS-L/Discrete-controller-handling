@@ -17,7 +17,7 @@ In order to use the second option simply set the parameters: cp=5 & cc=2
 Two quantization methods are also available. In order to use the uniform quantization set cq=1, and for the nonuniform quantization set cq=2. Moreover, the number of bits used for the quantization can be set inside the function called *quz*.
 
 ### Interpolator settings
-There are different interpolators available to use for the IBM method, two explicit interpolators and three implicit ones. To change the explicit and implicit interpolators inside the file __*IBM*__, you should comment the current and decomment the one you wish to choose inside the functions "*interpolatorg*" and "*funcg*", respectively. Please note that only one of the interpolators must be decomented.
+There are different interpolators available to use for the IBM method, two explicit interpolators and three implicit ones. To change the explicit and implicit interpolators inside the file __*IBM*__, you should comment the current and decomment the one you wish to choose inside the functions "*predictorg*" and "*funcg*", respectively. Please note that only one of the interpolators must be decomented.
 
 ### Simulation settings
 
