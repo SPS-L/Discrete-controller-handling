@@ -1,4 +1,4 @@
-%% %% This file solves synchronous machine using the traditional method (reference)
+%% %% This file solves synchronous machine infinite bus example using the traditional method (reference)
 %%%% Please set the parameters based on the guidance provided in the Readme.md file 
 %both torque and AVR
 clear all
