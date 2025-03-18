@@ -1,4 +1,4 @@
-%% %% This file solves the synchronous machine using the interpolation based method (IBM)
+%% %% This file solves the synchronous machine infinite bus example using the interpolation based method (IBM)
 %%%% Please set the parameters based on the guidance provided in the Readme.md file
 %both torque and AVR (with new J)
 tic
