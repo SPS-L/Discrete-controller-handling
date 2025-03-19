@@ -1,4 +1,4 @@
-# Discrete-controller-handling
+# Decoupled IBM, the most simplified and fastest IBM
 The codes for the case studies of the paper "Decoupled Interpolation-based Method for Numerical Simulation of Digital Controllers" published in SysCon 2024 are included.
 ## How to use
 The files of the project are paired together. Please run the SRM files first, then the IBM, and finally the decoupled IBM.
