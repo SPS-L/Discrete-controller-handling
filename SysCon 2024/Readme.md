@@ -1,4 +1,4 @@
-![image](https://github.com/user-attachments/assets/1d522a94-c166-42e9-ba5a-eb63daf3b2c9)# Discrete-controller-handling
+# Discrete-controller-handling
 The codes for the case studies of the paper "Decoupled Interpolation-based Method for Numerical Simulation of Digital Controllers" published in SysCon 2024 are included.
 ## How to use
 The files of the project are paired together. Please run the SRM files first, then the IBM, and finally the decoupled IBM.
