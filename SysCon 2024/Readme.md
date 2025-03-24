@@ -33,4 +33,4 @@ The eigenvalues of the system (*a* and *b*) can be set inside of the function *b
 
 ## Results
 
-The figures will be made automatically. Set the variable *save* to 1 in the decoupled files if you wish to save the figures as PDF files. Besides, the overall number of iterations is saved under the variable called *iterationsc*.
+The figures will be made automatically. Set the variable *save* to 1 in the *decoupled* files if you wish to save the figures as PDF files. Besides, the overall number of iterations is saved under the variable called *iterationsc*.
