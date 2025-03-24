@@ -1,4 +1,4 @@
-# Discrete-controller-handling
+# Model the digital controller properly
 The code files of the paper "Modeling of Digital Controllers in Electric Power System Dynamic Simulations" published in PowerTech 2023 may be found here.
 ## How to use
 The files of the project are paired together. In each test case, please run the __*Analog*__ file first, then the __*Digital*__ one. In the case of the 3-bus system, both the analog and digital files have 2 separate files solving the system with a constant and variable time-step method.
