@@ -1,6 +1,6 @@
 # OSMSES2024
 
-This project uses a novel interpolation-based method to solve a set of DAEs alongside the difference equations of the digital controller. you may find the simulation files of the paper "A Modeilica IBM Implementation for Fast Simulation of Digital Controllers in Power Systems"
+This project uses a novel interpolation-based method to solve a set of DAEs alongside the difference equations of the digital controllers using Modelica. You may find the simulation files of the paper "A Modeilica IBM Implementation for Fast Simulation of Digital Controllers in Power Systems"
 
 ## How to use
 There are 2 case studies named __*Integral Controller*__, and __*SMIB*__ for simulation of the classical integral controller, and the SMIB system, respectively, used in the paper.
