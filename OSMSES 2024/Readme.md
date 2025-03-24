@@ -1,4 +1,4 @@
-# OSMSES2024
+# Use IBM in Modelica
 
 This project uses a novel interpolation-based method to solve a set of DAEs alongside the difference equations of the digital controllers using Modelica. You may find the simulation files of the paper "A Modelica IBM Implementation for Fast Simulation of Digital Controllers in Power Systems"
 
