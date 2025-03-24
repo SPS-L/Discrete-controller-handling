@@ -25,7 +25,7 @@ The time of the simulation can be set by the parameter *tsim*. The parameters *h
 
 ### Controller settings
 
-Each folder has the same test system with a different controller solved with 3 different methods. For the equation-based controller you just need to run the files in order. For the fuzzy controller, please first import the fuzzy controller to the workspace. For the machine-learning controller, first rund the SRM file for the equation-based controller, then run the file *ANNAVR* to train the controller. Finally, run the rest of the files in the order.
+Each folder has the same test system with a different controller solved with 3 different methods. For the equation-based controller you just need to run the files in order. For the fuzzy controller, please first import the fuzzy controller to the workspace. For the machine-learning controller, first run the SRM file for the equation-based controller, then run the file "*ANNAVR*" to train the controller. Finally, run the rest of the files in the order.
 
 ## Results
 
