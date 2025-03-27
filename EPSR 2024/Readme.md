@@ -1,4 +1,4 @@
-# Decoupled IBM, the most simplified Jacobian, and fastest IBM
+# The right choice of Jacobian for IBM, Compare the IBM against step-reduction method, simplified simulation method, or analog treatment method.
 The codes for the case studies of the paper "Methods for Incorporating Digital Controllers in Power System Dynamic Simulations" published in Electric Power Systems Research are included.
 ## How to use
 The files of the project are paired together. For all the test systems, please run the SRM file first, then the ATM, next SSM, and finally the IBM one.
